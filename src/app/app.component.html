@@ -1,5 +1,5 @@
 <perfect-scrollbar #perfectScrollbar class="scrollbar" (psScrollDown)="onScroll($event)" (psScrollUp)="onScroll($event)">
-  <app-tc-virtual-scroll [settings]="settings" [scrollTop]="scroll$ | async" (initialScroll)="setInitialScrollPosition($event)">
+  <app-tc-virtual-scroll [settings]="settings" [scrollPosition]="scrollPosition" (initialScrollPositionSet)="setInitialScrollPosition($event)">
     <ng-template #headerTemplate>
       <header>Header</header>
     </ng-template>
