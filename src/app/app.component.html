@@ -1,1 +1,5 @@
-<app-tc-virtual-scroll [settings]="settings"></app-tc-virtual-scroll>
+<app-tc-virtual-scroll [settings]="settings">
+  <ng-template #contentTemplate let-item>
+    <app-tc-item [text]="item.text"></app-tc-item>
+  </ng-template>
+</app-tc-virtual-scroll>

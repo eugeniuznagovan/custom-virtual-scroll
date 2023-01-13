@@ -13,8 +13,8 @@ export class AppComponent {
     itemHeight: 30,
     amount: 15,
     tolerance: 5,
-    minIndex: -9999,
-    maxIndex: 200000,
+    minIndex: -100,
+    maxIndex: 100,
     startIndex: 0
   };
 }

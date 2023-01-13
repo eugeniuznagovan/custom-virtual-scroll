@@ -1,6 +1,17 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, ViewChild } from '@angular/core';
+import {
+  AfterContentInit,
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ContentChild,
+  Input,
+  TemplateRef,
+  ViewChild
+} from '@angular/core';
 import { Settings, State } from './types';
-import { BehaviorSubject, map, Subject } from 'rxjs';
+import { BehaviorSubject, map, Subject, tap } from 'rxjs';
+import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 
 export namespace TcVirtualScrollComponentFns {
 
@@ -56,10 +67,10 @@ export namespace TcVirtualScrollComponentFns {
     }
   }
 
-  export function updateState(state: Readonly<State>, ) {
+  export function updateState(state: Readonly<State>,) {
     return (eventTarget: any) => {
-      const { totalHeight, toleranceHeight, bufferedItems, settings } = state;
-      const { itemHeight, minIndex } = settings;
+      const {totalHeight, toleranceHeight, bufferedItems, settings} = state;
+      const {itemHeight, minIndex} = settings;
 
       const index = minIndex + Math.floor((eventTarget.scrollTop - toleranceHeight) / itemHeight);
       const data = fns.getData(settings, index, bufferedItems);
@@ -90,8 +101,12 @@ export class TcVirtualScrollComponent implements AfterViewInit {
   public scrollSubject = new Subject();
   public scroll$ = this.scrollSubject.asObservable();
 
+  constructor(private changeDetectorRef: ChangeDetectorRef) {
+
+  }
+
   @ViewChild('viewport')
-  viewportElement!: ElementRef<any>
+  perfectScrollbar!: PerfectScrollbarComponent
 
   @Input()
   set settings(settings: Settings) {
@@ -100,21 +115,29 @@ export class TcVirtualScrollComponent implements AfterViewInit {
 
   trackByIndex = (index: number, item: any) => item.index;
 
+  @ContentChild('contentTemplate')
+  contentTemplate!: TemplateRef<any>;
+
   ngAfterViewInit() {
     if (!this.stateSubject.value) {
       throw new Error('Missing settings');
     }
 
-    const initialPosition = this.stateSubject.value.initialPosition;
-    this.viewportElement.nativeElement.scrollTop = initialPosition
-    this.onScroll({target: {scrollTop: initialPosition}} as any);
+    this.scroll$.pipe(
+      map(fns.updateState(this.stateSubject.value)),
+    ).subscribe(updatedState => {
+      this.stateSubject.next({...this.stateSubject.value, ...updatedState} as State);
+      this.changeDetectorRef.detectChanges();
+    });
 
-    this.scroll$
-      .pipe(map(fns.updateState(this.stateSubject.value))
-    ).subscribe(updatedState => this.stateSubject.next({...this.stateSubject.value, ...updatedState} as State));
+    const initialScrollPosition = this.stateSubject.value.initialPosition;
+    this.perfectScrollbar.directiveRef?.scrollToY(initialScrollPosition);
+    this.scrollSubject.next({scrollTop: initialScrollPosition});
   }
 
   onScroll(event: Partial<Event>) {
-    this.scrollSubject.next(event.target);
+    // @ts-ignore
+    const scrollPosition = this.perfectScrollbar.directiveRef.instance.lastScrollTop;
+    this.scrollSubject.next({scrollTop: scrollPosition});
   }
 }
