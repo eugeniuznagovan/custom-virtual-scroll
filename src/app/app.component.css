@@ -1,3 +1,7 @@
 .item {
   height: 35px;
 }
+
+.scrollbar {
+  height: inherit;
+}

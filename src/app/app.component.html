@@ -1,5 +1,15 @@
-<app-tc-virtual-scroll [settings]="settings">
-  <ng-template #contentTemplate let-item>
-    <app-tc-item [text]="item.text"></app-tc-item>
-  </ng-template>
-</app-tc-virtual-scroll>
+<perfect-scrollbar #perfectScrollbar class="scrollbar" (psScrollDown)="onScroll($event)" (psScrollUp)="onScroll($event)">
+  <app-tc-virtual-scroll [settings]="settings" [scrollTop]="scroll$ | async" (initialScroll)="setInitialScrollPosition($event)">
+    <ng-template #headerTemplate>
+      <header>Header</header>
+    </ng-template>
+
+    <ng-template #mainTemplate let-item>
+      <app-tc-item [text]="item.text"></app-tc-item>
+    </ng-template>
+
+    <ng-template #footerTemplate>
+      <footer>Footer</footer>
+    </ng-template>
+  </app-tc-virtual-scroll>
+</perfect-scrollbar>

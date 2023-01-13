@@ -1,17 +1,6 @@
-import {
-  AfterContentInit,
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ContentChild,
-  Input,
-  TemplateRef,
-  ViewChild
-} from '@angular/core';
+import { AfterViewInit, Component, ContentChild, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { Settings, State } from './types';
-import { BehaviorSubject, map, Subject, tap } from 'rxjs';
-import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
+import { BehaviorSubject, map } from 'rxjs';
 
 export namespace TcVirtualScrollComponentFns {
 
@@ -68,11 +57,11 @@ export namespace TcVirtualScrollComponentFns {
   }
 
   export function updateState(state: Readonly<State>,) {
-    return (eventTarget: any) => {
+    return (scrollPosition: number) => {
       const {totalHeight, toleranceHeight, bufferedItems, settings} = state;
       const {itemHeight, minIndex} = settings;
 
-      const index = minIndex + Math.floor((eventTarget.scrollTop - toleranceHeight) / itemHeight);
+      const index = minIndex + Math.floor((scrollPosition - toleranceHeight) / itemHeight);
       const data = fns.getData(settings, index, bufferedItems);
       const topPaddingHeight = Math.max((index - minIndex) * itemHeight, 0)
       const bottomPaddingHeight = Math.max(totalHeight - topPaddingHeight - data.length * itemHeight, 0);
@@ -89,34 +78,40 @@ export namespace TcVirtualScrollComponentFns {
 const fns = TcVirtualScrollComponentFns;
 
 @Component({
-  selector: 'app-tc-virtual-scroll',
+  selector: 'app-tc-virtual-scroll[settings][scrollTop]',
   templateUrl: './tc-virtual-scroll.component.html',
   styleUrls: ['./tc-virtual-scroll.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TcVirtualScrollComponent implements AfterViewInit {
   private stateSubject = new BehaviorSubject<State | undefined>(undefined);
   public state$ = this.stateSubject.asObservable();
 
-  public scrollSubject = new Subject();
+  public scrollSubject = new BehaviorSubject<number>(0);
   public scroll$ = this.scrollSubject.asObservable();
-
-  constructor(private changeDetectorRef: ChangeDetectorRef) {
-
-  }
-
-  @ViewChild('viewport')
-  perfectScrollbar!: PerfectScrollbarComponent
 
   @Input()
   set settings(settings: Settings) {
     this.stateSubject.next(fns.initState(settings))
   }
 
+  @Input()
+  set scrollTop(scrollPosition: number | null) {
+    this.scrollSubject.next(scrollPosition as number);
+  }
+
+  @Output()
+  initialScroll = new EventEmitter<number>();
+
   trackByIndex = (index: number, item: any) => item.index;
 
-  @ContentChild('contentTemplate')
-  contentTemplate!: TemplateRef<any>;
+  @ContentChild('mainTemplate')
+  mainTemplate!: TemplateRef<any>;
+
+  @ContentChild('footerTemplate')
+  footerTemplate!: TemplateRef<any>;
+
+  @ContentChild('headerTemplate')
+  headerTemplate!: TemplateRef<any>;
 
   ngAfterViewInit() {
     if (!this.stateSubject.value) {
@@ -127,17 +122,10 @@ export class TcVirtualScrollComponent implements AfterViewInit {
       map(fns.updateState(this.stateSubject.value)),
     ).subscribe(updatedState => {
       this.stateSubject.next({...this.stateSubject.value, ...updatedState} as State);
-      this.changeDetectorRef.detectChanges();
     });
 
     const initialScrollPosition = this.stateSubject.value.initialPosition;
-    this.perfectScrollbar.directiveRef?.scrollToY(initialScrollPosition);
-    this.scrollSubject.next({scrollTop: initialScrollPosition});
-  }
-
-  onScroll(event: Partial<Event>) {
-    // @ts-ignore
-    const scrollPosition = this.perfectScrollbar.directiveRef.instance.lastScrollTop;
-    this.scrollSubject.next({scrollTop: scrollPosition});
+    this.scrollSubject.next(initialScrollPosition);
+    this.initialScroll.emit(initialScrollPosition);
   }
 }

@@ -1,11 +1,13 @@
 <ng-container *ngIf="state$ | async as state;">
-  <perfect-scrollbar #viewport class="viewport" [disabled]="!(state$ | async)" [style.height]="state.viewportHeight + 'px'" (psScrollY)="onScroll($event)">
+  <div [style.height]="state.viewportHeight + 'px'">
+    <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
+
     <div [style.height]="state.topPaddingHeight + 'px'"></div>
-
       <ng-container *ngFor="let item of state.data; trackBy: trackByIndex">
-        <ng-container *ngTemplateOutlet="contentTemplate; context: {$implicit: item}"></ng-container>
+        <ng-container *ngTemplateOutlet="mainTemplate; context: {$implicit: item}"></ng-container>
       </ng-container>
-
     <div [style.height]="state.bottomPaddingHeight + 'px'"></div>
-  </perfect-scrollbar>
+
+    <ng-container *ngTemplateOutlet="footerTemplate"></ng-container>
+  </div>
 </ng-container>
